@@ -1,0 +1,43 @@
+import json
+import re
+import ollama
+
+
+class LlamaService:
+
+    def __init__(self):
+        self.model = "llama3.2"
+
+    def extract_json(self, prompt):
+
+        response = ollama.chat(
+            model=self.model,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        output = response["message"]["content"].strip()
+
+        # Remove markdown if present
+        output = output.replace("```json", "")
+        output = output.replace("```", "").strip()
+
+        # Extract JSON object
+        match = re.search(r"\{.*\}", output, re.DOTALL)
+
+        if match:
+            output = match.group(0)
+
+        try:
+            return json.loads(output)
+
+        except Exception:
+            return {
+                "status": "error",
+                "message": "Model returned invalid JSON.",
+                "raw_output": output
+            }
